@@ -1,30 +1,30 @@
 #!/usr/bin/env node
-import { runPicker } from "./pick";
+import { complete } from "./complete";
 import { openPath } from "./open";
 import { renderFishSnippet } from "./init-fish";
 import { installFishIntegration } from "./install";
 
-const USAGE = `cmux-open-file <pick|open|init|install>
+const USAGE = `cmux-open-file <complete|open|init|install>
 
 Normally invoked indirectly via the '@' key in fish shell.
 
-  pick               Launch the fuzzy file picker (prints selected path to stdout)
-  open <path>        Open <path> in cmux based on its extension
-  init fish          Print fish integration snippet
-  install            Install fish integration to ~/.config/fish/conf.d/
+  complete -- <query>  Print fuzzy-ranked path candidates (one per line) for fish completion
+  open <path>          Open <path> in cmux based on its extension
+  init fish            Print fish integration snippet
+  install              Install fish integration to ~/.config/fish/conf.d/
 `;
 
 async function main(): Promise<void> {
   const [, , sub, ...args] = process.argv;
 
   switch (sub) {
-    case "pick": {
-      const selected = await runPicker();
-      if (selected) {
-        process.stdout.write(selected);
-        process.exit(0);
-      }
-      process.exit(1);
+    case "complete": {
+      // fish の `complete -a '(cmux-open-file complete -- (commandline -ct))'` から呼ばれる。
+      // 引数は "--" のあとに query 1個 (空文字も含む)。
+      const dashDash = args.indexOf("--");
+      const query = dashDash >= 0 ? args.slice(dashDash + 1).join(" ") : args.join(" ");
+      const results = await complete(query);
+      process.stdout.write(results.join("\n") + (results.length > 0 ? "\n" : ""));
       return;
     }
     case "open": {

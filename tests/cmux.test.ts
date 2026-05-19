@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import { setSpawner, runCmux, parsePaneRef } from "../src/cmux";
+import { setSpawner, runCmux, parsePaneRef, parseSurfaceRef, parseRefs } from "../src/cmux";
 
 describe("runCmux", () => {
   let calls: string[][] = [];
@@ -43,5 +43,18 @@ describe("parsePaneRef", () => {
 
   test("pane を含まなければ例外", () => {
     expect(() => parsePaneRef("OK surface:1 workspace:1")).toThrow(/pane ref/);
+  });
+});
+
+describe("parseSurfaceRef / parseRefs", () => {
+  test("surface ref を抽出", () => {
+    expect(parseSurfaceRef("OK surface:34 pane:29 workspace:15")).toBe("surface:34");
+  });
+
+  test("parseRefs は pane と surface 両方を返す", () => {
+    expect(parseRefs("OK surface:34 pane:29 workspace:15")).toEqual({
+      paneRef: "pane:29",
+      surfaceRef: "surface:34",
+    });
   });
 });

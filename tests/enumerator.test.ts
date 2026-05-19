@@ -14,6 +14,11 @@ beforeAll(async () => {
   await writeFile(join(dir, "sub", "b.ts"), "");
   await mkdir(join(dir, ".git"));
   await writeFile(join(dir, ".git", "config"), "");
+  // 除外されるべき: ルート直下と入れ子の node_modules
+  await mkdir(join(dir, "node_modules"));
+  await writeFile(join(dir, "node_modules", "x.js"), "");
+  await mkdir(join(dir, "sub", "node_modules"));
+  await writeFile(join(dir, "sub", "node_modules", "y.js"), "");
 });
 
 afterAll(async () => {
@@ -42,6 +47,13 @@ describe("enumerate", () => {
     const files = await enumerate(dir, 1000);
     for (const f of files) {
       expect(f.startsWith("/")).toBe(false);
+    }
+  });
+
+  test("node_modules 配下は除外される (ルート・入れ子とも)", async () => {
+    const files = await enumerate(dir, 1000);
+    for (const f of files) {
+      expect(f).not.toContain("node_modules");
     }
   });
 });

@@ -8,15 +8,18 @@ describe("renderFishSnippet", () => {
     expect(snippet).toContain("bind @ '__cmux_open_file_at_trigger'");
   });
 
-  test("commandline が空の時のみピッカー起動", () => {
-    expect(snippet).toContain("if test -z (commandline)");
+  test("commandline が空の時に '@ ' を挿入して補完を発火", () => {
+    expect(snippet).toContain("commandline -i '@ '");
+    expect(snippet).toContain("commandline -f complete");
   });
 
   test("@ 関数で cmux-open-file open を呼ぶ", () => {
     expect(snippet).toContain("cmux-open-file open $argv");
   });
 
-  test('commandline -i "@ $selected" で挿入する (fish が @ を独立トークンとして解釈するため空白が必要)', () => {
-    expect(snippet).toContain('commandline -i "@ $selected"');
+  test("complete -c @ で dynamic completion を登録", () => {
+    expect(snippet).toContain("complete -c @ -f -k -a");
+    expect(snippet).toContain("cmux-open-file complete");
+    expect(snippet).toContain("commandline -ct");
   });
 });

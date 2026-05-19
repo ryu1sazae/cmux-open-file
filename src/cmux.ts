@@ -38,17 +38,36 @@ export async function runCmux(args: string[]): Promise<string> {
   return stdout;
 }
 
-// cmux のペイン参照は2形式:
-//  - short ref:  "pane:29"            (例: `cmux new-pane` の OK 行)
-//  - key=value:  "pane=pane:29"       (例: 一部サブコマンドの構造化出力)
-//  - UUID:       "pane=<uuid>"        (--id-format uuids 指定時)
-const SHORT_REF_RE = /\bpane:[A-Za-z0-9_-]+/;
-const KV_REF_RE = /\bpane=([A-Za-z0-9_:-]+)/;
+// cmux のリファレンス文字列は2形式:
+//  - short ref:  "pane:29" / "surface:34"  (例: `cmux new-pane` の OK 行)
+//  - key=value:  "pane=pane:29"            (例: 一部サブコマンドの構造化出力)
+//  - UUID:       "pane=<uuid>"             (--id-format uuids 指定時)
+function makeShortRe(kind: "pane" | "surface"): RegExp {
+  return new RegExp(`\\b${kind}:[A-Za-z0-9_-]+`);
+}
+function makeKvRe(kind: "pane" | "surface"): RegExp {
+  return new RegExp(`\\b${kind}=([A-Za-z0-9_:-]+)`);
+}
+
+function parseRef(kind: "pane" | "surface", output: string): string {
+  const short = makeShortRe(kind).exec(output);
+  if (short) return short[0];
+  const kv = makeKvRe(kind).exec(output);
+  if (kv) return kv[1];
+  throw new Error(`cmux output did not contain a ${kind} ref: ${output.trim()}`);
+}
 
 export function parsePaneRef(output: string): string {
-  const short = SHORT_REF_RE.exec(output);
-  if (short) return short[0];
-  const kv = KV_REF_RE.exec(output);
-  if (kv) return kv[1];
-  throw new Error(`cmux output did not contain a pane ref: ${output.trim()}`);
+  return parseRef("pane", output);
+}
+
+export function parseSurfaceRef(output: string): string {
+  return parseRef("surface", output);
+}
+
+export function parseRefs(output: string): { paneRef: string; surfaceRef: string } {
+  return {
+    paneRef: parsePaneRef(output),
+    surfaceRef: parseSurfaceRef(output),
+  };
 }

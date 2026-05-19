@@ -1,5 +1,5 @@
 import { resolve, extname } from "node:path";
-import { runCmux, parsePaneRef } from "./cmux";
+import { runCmux, parseRefs, parseSurfaceRef } from "./cmux";
 
 export async function openPath(input: string): Promise<void> {
   const workspace = process.env.CMUX_WORKSPACE_ID;
@@ -18,12 +18,13 @@ export async function openPath(input: string): Promise<void> {
     "--workspace", workspace,
     "--focus", "false",
   ]);
-  const paneRef = parsePaneRef(newPaneOut);
+  const { paneRef, surfaceRef } = parseRefs(newPaneOut);
 
-  // 2. nvim をその pane に送信
+  // 2. nvim をその pane の最初のサーフェス (terminal) に送信。
+  //    `cmux send` は --surface を受け取るが --pane は受け取らない。
   await runCmux([
     "send",
-    "--pane", paneRef,
+    "--surface", surfaceRef,
     `nvim ${shellQuote(abs)}\r`,
   ]);
 
@@ -39,11 +40,19 @@ export async function openPath(input: string): Promise<void> {
         "--focus", "false",
       ]);
       break;
-    case ".md":
-      // cmux の markdown ビューアは pane 配置を制御できないため別位置に出る。
-      // live reload 付きの内蔵ビューアを優先し、要件「1ペイン2タブ」は妥協。
-      await runCmux(["markdown", "open", abs, "--focus", "false"]);
+    case ".md": {
+      // cmux markdown には --pane が無いので一旦どこかに作られる surface を
+      // move-surface で新ペインに引き取り、結果的に「1ペイン2タブ」にする。
+      const mdOut = await runCmux(["markdown", "open", abs, "--focus", "false"]);
+      const mdSurfaceRef = parseSurfaceRef(mdOut);
+      await runCmux([
+        "move-surface",
+        "--surface", mdSurfaceRef,
+        "--pane", paneRef,
+        "--focus", "false",
+      ]);
       break;
+    }
     default:
       // nvim のみ
       break;
