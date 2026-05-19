@@ -24,20 +24,23 @@ export async function runPicker(): Promise<string | null> {
   const targets = await enumerate(cwd, ENUMERATE_LIMIT);
   const truncated = targets.length >= ENUMERATE_LIMIT;
 
-  process.stdout.write(ENTER_ALT + HIDE_CURSOR);
+  // TUI output goes to stderr so it doesn't pollute the captured stdout (the selected path).
+  // The fish snippet redirects stderr to /dev/tty so it remains visible.
+  const ui = process.stderr;
+  ui.write(ENTER_ALT + HIDE_CURSOR);
   process.stdin.setRawMode(true);
   process.stdin.resume();
   process.stdin.setEncoding("utf-8");
 
   let state = createState(targets, VISIBLE_LIMIT);
-  render(state, truncated);
+  render(ui, state, truncated);
 
   return new Promise((resolve) => {
     const cleanup = (result: string | null) => {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       process.stdin.removeAllListeners("data");
-      process.stdout.write(SHOW_CURSOR + EXIT_ALT);
+      ui.write(SHOW_CURSOR + EXIT_ALT);
       resolve(result);
     };
 
@@ -54,14 +57,14 @@ export async function runPicker(): Promise<string | null> {
         }
         state = applyKey(state, action.key);
       }
-      render(state, truncated);
+      render(ui, state, truncated);
     };
 
     process.stdin.on("data", onData);
   });
 }
 
-function render(state: PickState, truncated: boolean): void {
+function render(ui: NodeJS.WritableStream, state: PickState, truncated: boolean): void {
   let out = CLEAR;
   out += `${DIM}cmux-open-file${RESET} ` +
     `${DIM}— ↑↓ select · Tab/→/Enter confirm · Esc cancel${RESET}\n`;
@@ -81,5 +84,5 @@ function render(state: PickState, truncated: boolean): void {
       }
     }
   }
-  process.stdout.write(out);
+  ui.write(out);
 }
