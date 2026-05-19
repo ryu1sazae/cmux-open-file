@@ -10,7 +10,11 @@ describe("openPath", () => {
     calls = [];
     setSpawner(async (cmd, args) => {
       calls.push([cmd, ...args]);
-      return { exitCode: 0, stderr: "" };
+      // 最初の呼び出し (new-pane) では pane ref を返す
+      if (args[0] === "new-pane") {
+        return { exitCode: 0, stdout: "OK surface=surface:99 pane=pane:42 path=/tmp\n", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
     });
     process.env.CMUX_WORKSPACE_ID = "ws-1";
   });
@@ -31,10 +35,17 @@ describe("openPath", () => {
     expect(flat.some((c) => c.includes("markdown open /tmp/foo.md"))).toBe(true);
   });
 
-  test(".html は nvim + browser", async () => {
+  test(".html は同じ pane 内に browser surface を追加", async () => {
     await openPath("/tmp/foo.html");
     const flat = calls.map((c) => c.join(" "));
-    expect(flat.some((c) => c.includes("browser open file:///tmp/foo.html"))).toBe(true);
+    expect(flat.some((c) => c.includes("new-surface --type browser --pane pane:42"))).toBe(true);
+    expect(flat.some((c) => c.includes("file:///tmp/foo.html"))).toBe(true);
+  });
+
+  test("nvim は new-pane 直後に作られた pane へ送信", async () => {
+    await openPath("/tmp/foo.ts");
+    const flat = calls.map((c) => c.join(" "));
+    expect(flat.some((c) => c.startsWith("cmux send --pane pane:42 nvim"))).toBe(true);
   });
 
   test("その他の拡張子は nvim のみ", async () => {
