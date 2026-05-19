@@ -29,7 +29,11 @@ describe("runCmux", () => {
 });
 
 describe("parsePaneRef", () => {
-  test("'OK surface=... pane=pane:24 path=...' から pane ref を抽出", () => {
+  test("'OK surface:34 pane:29 workspace:15' (cmux new-pane の実出力) から抽出", () => {
+    expect(parsePaneRef("OK surface:34 pane:29 workspace:15\n")).toBe("pane:29");
+  });
+
+  test("'pane=pane:24' (key=value 形式) から抽出", () => {
     expect(parsePaneRef("OK surface=surface:33 pane=pane:24 path=/tmp\n")).toBe("pane:24");
   });
 
@@ -37,7 +41,7 @@ describe("parsePaneRef", () => {
     expect(parsePaneRef("OK pane=abc-123 something else")).toBe("abc-123");
   });
 
-  test("pane が無ければ例外", () => {
-    expect(() => parsePaneRef("OK surface=surface:1 workspace=workspace:1")).toThrow(/pane ref/);
+  test("pane を含まなければ例外", () => {
+    expect(() => parsePaneRef("OK surface:1 workspace:1")).toThrow(/pane ref/);
   });
 });

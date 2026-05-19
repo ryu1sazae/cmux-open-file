@@ -12,7 +12,8 @@ describe("openPath", () => {
       calls.push([cmd, ...args]);
       // 最初の呼び出し (new-pane) では pane ref を返す
       if (args[0] === "new-pane") {
-        return { exitCode: 0, stdout: "OK surface=surface:99 pane=pane:42 path=/tmp\n", stderr: "" };
+        // 実際の cmux new-pane の出力フォーマット
+        return { exitCode: 0, stdout: "OK surface:99 pane:42 workspace:1\n", stderr: "" };
       }
       return { exitCode: 0, stdout: "", stderr: "" };
     });
