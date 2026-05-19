@@ -17,6 +17,9 @@ describe("openPath", () => {
       if (args[0] === "markdown") {
         return { exitCode: 0, stdout: "OK surface:77 pane:55 workspace:1\n", stderr: "" };
       }
+      if (args[0] === "new-surface") {
+        return { exitCode: 0, stdout: "OK surface:88 pane:42 workspace:1\n", stderr: "" };
+      }
       return { exitCode: 0, stdout: "", stderr: "" };
     });
     process.env.CMUX_WORKSPACE_ID = "ws-1";
@@ -31,20 +34,24 @@ describe("openPath", () => {
     }
   });
 
-  test(".md は markdown 起動後 move-surface で新ペインに引っ越し", async () => {
+  test(".md は markdown surface を nvim の左に移動", async () => {
     await openPath("/tmp/foo.md");
     const flat = calls.map((c) => c.join(" "));
     expect(flat.some((c) => c.includes("new-pane"))).toBe(true);
     expect(flat.some((c) => c.includes("markdown open /tmp/foo.md"))).toBe(true);
-    // 取得した surface:77 を pane:42 に move する
-    expect(flat.some((c) => c.includes("move-surface --surface surface:77 --pane pane:42"))).toBe(true);
+    // markdown surface (surface:77) を pane:42 に移し、nvim surface (surface:99) の前 (左) に置く
+    expect(flat.some((c) =>
+      c.includes("move-surface --surface surface:77 --pane pane:42 --before surface:99")
+    )).toBe(true);
   });
 
-  test(".html は同じ pane 内に browser surface を追加", async () => {
+  test(".html は同じ pane 内に browser surface を nvim の左に追加", async () => {
     await openPath("/tmp/foo.html");
     const flat = calls.map((c) => c.join(" "));
     expect(flat.some((c) => c.includes("new-surface --type browser --pane pane:42"))).toBe(true);
     expect(flat.some((c) => c.includes("file:///tmp/foo.html"))).toBe(true);
+    // browser surface (surface:88) を nvim surface (surface:99) の前 (左) に並べる
+    expect(flat.some((c) => c.includes("reorder-surface --surface surface:88 --before surface:99"))).toBe(true);
   });
 
   test("nvim は new-pane 直後の surface へ送信される (cmux send は --surface のみ受け付ける)", async () => {
