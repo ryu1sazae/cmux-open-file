@@ -14,11 +14,19 @@ beforeAll(async () => {
   await writeFile(join(dir, "sub", "b.ts"), "");
   await mkdir(join(dir, ".git"));
   await writeFile(join(dir, ".git", "config"), "");
-  // 除外されるべき: ルート直下と入れ子の node_modules
-  await mkdir(join(dir, "node_modules"));
-  await writeFile(join(dir, "node_modules", "x.js"), "");
+  // 除外されるべきディレクトリ群
+  for (const d of ["node_modules", "dist", "build", "out", "target", "coverage",
+                   "__pycache__", ".pytest_cache", ".venv", "venv",
+                   ".next", ".cache", ".turbo", "vendor", ".gradle"]) {
+    await mkdir(join(dir, d));
+    await writeFile(join(dir, d, "x.js"), "");
+  }
+  // 入れ子の node_modules も除外される
   await mkdir(join(dir, "sub", "node_modules"));
   await writeFile(join(dir, "sub", "node_modules", "y.js"), "");
+  // .DS_Store ファイルは除外される
+  await writeFile(join(dir, ".DS_Store"), "");
+  await writeFile(join(dir, "sub", ".DS_Store"), "");
 });
 
 afterAll(async () => {
@@ -32,10 +40,9 @@ describe("enumerate", () => {
     expect(files).toContain("sub/b.ts");
   });
 
-  test("隠しファイルも含む", async () => {
+  test("隠しファイルは含む (除外リスト外のもの)", async () => {
     const files = await enumerate(dir, 1000);
     expect(files).toContain(".hidden");
-    expect(files).toContain(".git/config");
   });
 
   test("limit で打ち切る", async () => {
@@ -55,5 +62,31 @@ describe("enumerate", () => {
     for (const f of files) {
       expect(f).not.toContain("node_modules");
     }
+  });
+
+  test(".git 配下も除外される", async () => {
+    const files = await enumerate(dir, 1000);
+    expect(files).not.toContain(".git/config");
+  });
+
+  test("dist/build/out/target/coverage などのビルド成果物ディレクトリは除外", async () => {
+    const files = await enumerate(dir, 1000);
+    for (const d of ["dist", "build", "out", "target", "coverage"]) {
+      expect(files).not.toContain(`${d}/x.js`);
+    }
+  });
+
+  test("Python と JS フレームワークのキャッシュも除外", async () => {
+    const files = await enumerate(dir, 1000);
+    for (const d of ["__pycache__", ".pytest_cache", ".venv", "venv",
+                     ".next", ".cache", ".turbo", "vendor", ".gradle"]) {
+      expect(files).not.toContain(`${d}/x.js`);
+    }
+  });
+
+  test(".DS_Store は除外される", async () => {
+    const files = await enumerate(dir, 1000);
+    expect(files).not.toContain(".DS_Store");
+    expect(files).not.toContain("sub/.DS_Store");
   });
 });

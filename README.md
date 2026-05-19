@@ -36,7 +36,14 @@ fish のコマンドラインが空のときに `@` を押すと、自動で `@ 
 - `.html` → ブラウザ (左) + nvim (右)
 - その他 → nvim のみ
 
-検索対象から `node_modules/` 配下は除外される。隠しファイル (`.git/` 含む) は対象。
+検索対象から以下は除外される（隠しファイルは含む）:
+
+- VCS / 依存: `.git`, `node_modules`, `vendor`
+- ビルド成果物: `dist`, `build`, `out`, `target`, `coverage`
+- Python: `__pycache__`, `.pytest_cache`, `.venv`, `venv`, `env`
+- JS/TS フレームワーク・キャッシュ: `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.expo`, `.cache`, `.parcel-cache`, `.vite`, `.turbo`
+- JVM: `.gradle`
+- macOS メタデータ: `.DS_Store`
 
 ## Uninstall
 
