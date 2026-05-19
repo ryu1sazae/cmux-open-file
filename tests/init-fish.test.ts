@@ -16,7 +16,7 @@ describe("renderFishSnippet", () => {
     expect(snippet).toContain("cmux-open-file open $argv");
   });
 
-  test('commandline -i "@$selected " で挿入する', () => {
-    expect(snippet).toContain('commandline -i "@$selected "');
+  test('commandline -i "@ $selected" で挿入する (fish が @ を独立トークンとして解釈するため空白が必要)', () => {
+    expect(snippet).toContain('commandline -i "@ $selected"');
   });
 });

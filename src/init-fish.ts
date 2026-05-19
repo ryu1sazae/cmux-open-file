@@ -7,7 +7,7 @@ function __cmux_open_file_at_trigger
     if test -z (commandline)
         set -l selected (cmux-open-file pick </dev/tty 2>/dev/tty)
         if test $status -eq 0 -a -n "$selected"
-            commandline -i "@$selected "
+            commandline -i "@ $selected"
         end
         commandline -f repaint
     else

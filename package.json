@@ -1,6 +1,6 @@
 {
   "name": "cmux-open-file",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Open files in cmux via a fuzzy '@' picker in fish shell",
   "type": "module",
   "bin": {
