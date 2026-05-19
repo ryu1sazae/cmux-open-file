@@ -1,12 +1,20 @@
+import { spawn } from "node:child_process";
+
 export type SpawnResult = { exitCode: number; stderr: string };
 export type Spawner = (cmd: string, args: string[]) => Promise<SpawnResult>;
 
-const defaultSpawner: Spawner = async (cmd, args) => {
-  const proc = Bun.spawn([cmd, ...args], { stderr: "pipe", stdout: "inherit" });
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
-  return { exitCode, stderr };
-};
+const defaultSpawner: Spawner = (cmd, args) =>
+  new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args, { stdio: ["ignore", "inherit", "pipe"] });
+    let stderr = "";
+    proc.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf-8");
+    });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      resolve({ exitCode: code ?? 0, stderr });
+    });
+  });
 
 let spawner: Spawner = defaultSpawner;
 
