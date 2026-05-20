@@ -8,33 +8,27 @@ describe("renderFishSnippet", () => {
     expect(snippet).toContain("bind @ '__cmux_open_file_at_trigger'");
   });
 
-  test("commandline が空の時に '@ ' を挿入して補完を発火", () => {
-    expect(snippet).toContain("commandline -i '@ '");
-    // complete-and-search を使う (単一候補でも自動確定されない)
-    expect(snippet).toContain("commandline -f complete-and-search");
-  });
-
-  test("@ 関数で cmux-open-file open を呼ぶ", () => {
+  test("@ コマンドが cmux-open-file open を呼ぶ", () => {
     expect(snippet).toContain("cmux-open-file open $argv");
   });
 
-  test("complete -c @ で dynamic completion を登録", () => {
-    expect(snippet).toContain("complete -c @ -f -k -a");
-    expect(snippet).toContain("cmux-open-file complete");
-    expect(snippet).toContain("commandline -ct");
+  test("ピッカーを cmux-open-file pick で起動する", () => {
+    expect(snippet).toContain("cmux-open-file pick");
+    // /dev/tty にバイパス (stdout 捕捉と TUI 表示を両立)
+    expect(snippet).toContain("</dev/tty 2>/dev/tty");
   });
 
-  test("英数字・パス区切り文字を bind してインクリメンタル再補完を実現", () => {
-    expect(snippet).toContain("__cmux_open_file_self_insert");
+  test("選択結果は '@ <path>' として挿入される", () => {
+    expect(snippet).toContain('commandline -i "@ $selected"');
+  });
+
+  test("既に '@ xxx' を編集中なら初期クエリ付きでピッカー再起動", () => {
     expect(snippet).toContain("string match -q '@ *'");
-    // 代表的な文字が個別に bind されていること
-    expect(snippet).toContain("bind 'a' '__cmux_open_file_self_insert 'a''");
-    expect(snippet).toContain("bind 'g' '__cmux_open_file_self_insert 'g''");
-    expect(snippet).toContain("bind '/' '__cmux_open_file_self_insert '/''");
+    expect(snippet).toContain("string sub --start 3");
   });
 
-  test("Backspace も '@ ' モード中は再補完を発火する", () => {
-    expect(snippet).toContain("__cmux_open_file_backspace");
-    expect(snippet).toContain("commandline -f backward-delete-char");
+  test("自前 TUI に統一しており complete-and-search は使わない", () => {
+    expect(snippet).not.toContain("complete-and-search");
+    expect(snippet).not.toContain("complete -c @");
   });
 });
