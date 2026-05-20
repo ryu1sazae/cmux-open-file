@@ -1,5 +1,5 @@
 import { resolve, extname } from "node:path";
-import { runCmux, parseRefs, parseSurfaceRef } from "./cmux";
+import { runCmux, parseSurfaceRef } from "./cmux";
 
 export async function openPath(input: string): Promise<void> {
   const workspace = process.env.CMUX_WORKSPACE_ID;
@@ -10,26 +10,31 @@ export async function openPath(input: string): Promise<void> {
   const abs = resolve(process.cwd(), input);
   const ext = extname(abs).toLowerCase();
 
-  // 1. 新ペインを fish タブの右に作成 (terminal タイプ)。最初のサーフェスは nvim 用。
-  const newPaneOut = await runCmux([
-    "new-pane",
-    "--direction", "right",
+  // 1. 呼び出し元 (fish) が属する pane を取得。
+  //    `cmux identify` の出力は JSON で、caller.pane_ref に現在のペインがある
+  //    (実機サンプルで確認済み)。
+  const identifyOut = await runCmux(["identify"]);
+  const paneRef = parseCallerPaneRef(identifyOut);
+
+  // 2. 現ペインに nvim 用 terminal サーフェスを追加 (新しいペインは作らない)
+  const nvimOut = await runCmux([
+    "new-surface",
     "--type", "terminal",
+    "--pane", paneRef,
     "--workspace", workspace,
     "--focus", "false",
   ]);
-  const { paneRef, surfaceRef } = parseRefs(newPaneOut);
+  const nvimSurfaceRef = parseSurfaceRef(nvimOut);
 
-  // 2. nvim をその pane の最初のサーフェス (terminal) に送信。
-  //    `cmux send` は --surface を受け取るが --pane は受け取らない。
+  // 3. その nvim サーフェスに `nvim <path>` を送信
   await runCmux([
     "send",
-    "--surface", surfaceRef,
+    "--surface", nvimSurfaceRef,
     `nvim ${shellQuote(abs)}\r`,
   ]);
 
-  // 3. 同じ pane に 2 つ目のサーフェス (プレビュー用) を追加。
-  //    タブ順は「プレビュー左 / nvim 右」になるよう --before で nvim の前に置く。
+  // 4. プレビュー用サーフェスを同じペインに追加。
+  //    タブ順は「プレビュー左 / nvim 右」になるよう --before nvim で並べる。
   switch (ext) {
     case ".html":
     case ".htm": {
@@ -44,21 +49,19 @@ export async function openPath(input: string): Promise<void> {
       await runCmux([
         "reorder-surface",
         "--surface", htmlSurfaceRef,
-        "--before", surfaceRef,
+        "--before", nvimSurfaceRef,
         "--focus", "false",
       ]);
       break;
     }
     case ".md": {
-      // cmux markdown には --pane が無いので一旦どこかに作られる surface を
-      // move-surface で新ペインに引き取り、--before で nvim の前 (左) に置く。
       const mdOut = await runCmux(["markdown", "open", abs, "--focus", "false"]);
       const mdSurfaceRef = parseSurfaceRef(mdOut);
       await runCmux([
         "move-surface",
         "--surface", mdSurfaceRef,
         "--pane", paneRef,
-        "--before", surfaceRef,
+        "--before", nvimSurfaceRef,
         "--focus", "false",
       ]);
       break;
@@ -67,6 +70,15 @@ export async function openPath(input: string): Promise<void> {
       // nvim のみ
       break;
   }
+}
+
+function parseCallerPaneRef(identifyJson: string): string {
+  const parsed = JSON.parse(identifyJson) as { caller?: { pane_ref?: string } };
+  const ref = parsed.caller?.pane_ref;
+  if (!ref) {
+    throw new Error(`cmux identify did not return caller.pane_ref: ${identifyJson.trim()}`);
+  }
+  return ref;
 }
 
 function shellQuote(s: string): string {
