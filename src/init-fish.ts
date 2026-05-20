@@ -22,11 +22,18 @@ function __cmux_open_file_at_trigger
     end
 
     set -l selected (cmux-open-file pick "$initial_query" </dev/tty 2>/dev/tty)
-    if test $status -eq 0 -a -n "$selected"
-        commandline -i "@ $selected"
-    else
-        # キャンセル: 元の commandline を復元 (空ならそのまま空)
-        commandline "$line"
+    set -l pick_status $status
+    switch $pick_status
+        case 0
+            if test -n "$selected"
+                commandline -i "@ $selected"
+            end
+        case 2
+            # Ctrl+U / Cmd+Backspace: '@' を含めて commandline 全消去
+            commandline ''
+        case '*'
+            # キャンセル: 元の commandline を復元
+            commandline "$line"
     end
     commandline -f repaint
 end

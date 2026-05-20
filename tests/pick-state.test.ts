@@ -113,15 +113,8 @@ describe("deleteLastWord", () => {
   });
 });
 
-describe("clear / delete-word キー (state)", () => {
+describe("delete-word キー (state)", () => {
   const t = ["docs/specs/2026.md", "src/cli.ts"];
-
-  test("clear で query が空になる", () => {
-    let s = createState(t, 10, "docs/spec");
-    s = applyKey(s, { type: "clear" });
-    expect(s.query).toBe("");
-    expect(s.matches.length).toBe(t.length);
-  });
 
   test("delete-word で末尾セグメントが消える", () => {
     let s = createState(t, 10, "docs/specs/2026.md");

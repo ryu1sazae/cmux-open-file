@@ -20,12 +20,16 @@ async function main(): Promise<void> {
   switch (sub) {
     case "pick": {
       const initialQuery = args.join(" ");
-      const sel = await runPicker(initialQuery);
-      if (sel) {
-        process.stdout.write(sel);
-        process.exit(0);
+      const result = await runPicker(initialQuery);
+      switch (result.kind) {
+        case "selected":
+          process.stdout.write(result.path);
+          process.exit(0);
+        case "clear":
+          process.exit(2);
+        case "cancel":
+          process.exit(1);
       }
-      process.exit(1);
       return;
     }
     case "open": {

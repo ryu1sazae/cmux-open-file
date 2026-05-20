@@ -4,7 +4,6 @@ export type Key =
   | { type: "char"; value: string }
   | { type: "backspace" }
   | { type: "delete-word" }
-  | { type: "clear" }
   | { type: "up" }
   | { type: "down" }
   | { type: "expand" };
@@ -69,10 +68,6 @@ export function applyKey(state: PickState, key: Key): PickState {
       const query = deleteLastWord(state.query);
       const matches = match(query, state.targets, state.limit);
       return { ...state, query, matches, cursor: 0 };
-    }
-    case "clear": {
-      const matches = match("", state.targets, state.limit);
-      return { ...state, query: "", matches, cursor: 0 };
     }
     case "up":
       return { ...state, cursor: Math.max(0, state.cursor - 1) };

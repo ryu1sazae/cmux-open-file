@@ -3,7 +3,8 @@ import type { Key } from "./pick-state";
 export type InputAction =
   | { type: "key"; key: Key }
   | { type: "confirm" }
-  | { type: "cancel" };
+  | { type: "cancel" }
+  | { type: "clear" };
 
 export function parseInput(data: string): InputAction[] {
   const actions: InputAction[] = [];
@@ -19,9 +20,10 @@ export function parseInput(data: string): InputAction[] {
       continue;
     }
 
-    // Ctrl+U → 行全消去 (macOS の Cmd+Backspace はだいたいこれに変換される)
+    // Ctrl+U (macOS の Cmd+Backspace 相当)
+    // → ピッカーを抜けて commandline ごと全消去する終了種別 "clear"
     if (ch === "\x15") {
-      actions.push({ type: "key", key: { type: "clear" } });
+      actions.push({ type: "clear" });
       i++;
       continue;
     }

@@ -12,21 +12,28 @@ const DIM = "\x1b[2m";
 const ENUMERATE_LIMIT = 100_000;
 const VISIBLE_LIMIT = 10;
 
+export type PickResult =
+  | { kind: "selected"; path: string }
+  | { kind: "cancel" }
+  | { kind: "clear" };
+
 /**
  * fish プロンプトの右に `@ <query>` をインライン描画し、すぐ下に候補をレンダーする
  * fuzzy ピッカー。stdin/stderr を /dev/tty に張り直して呼ばれる前提。
- * 最終的に選ばれたパスは stdout に出力する。
+ * 終了経路は3種類:
+ *   - selected: パスを stdout に出力。fish 側は `@ <path>` を commandline に挿入
+ *   - cancel:   何も出力しない。fish 側は元の commandline を復元
+ *   - clear:    何も出力しない。fish 側は commandline を空にする ('@' も消える)
  */
-export async function runPicker(initialQuery = ""): Promise<string | null> {
+export async function runPicker(initialQuery = ""): Promise<PickResult> {
   if (!process.stdin.isTTY) {
     process.stderr.write("cmux-open-file pick: stdin is not a TTY\n");
-    return null;
+    return { kind: "cancel" };
   }
 
   const targets = await enumerate(process.cwd(), ENUMERATE_LIMIT);
 
   const ui = process.stderr;
-  // 現在のカーソル位置 (fish プロンプト直後) を保存
   ui.write(SAVE_CURSOR);
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -36,26 +43,28 @@ export async function runPicker(initialQuery = ""): Promise<string | null> {
   render(ui, state);
 
   return new Promise((resolve) => {
-    const cleanup = (result: string | null) => {
+    const cleanup = (result: PickResult) => {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       process.stdin.removeAllListeners("data");
-      // 描画した内容をすべて拭って fish の repaint に明け渡す
       ui.write(RESTORE_CURSOR + CLEAR_TO_END);
       resolve(result);
     };
 
     process.stdin.on("data", (data: string) => {
       for (const action of parseInput(data)) {
-        if (action.type === "cancel") return cleanup(null);
-        if (action.type === "confirm") return cleanup(selected(state));
-        // 空 query で Backspace → ピッカーを抜けて fish の '@' も削除可能にする
+        if (action.type === "cancel") return cleanup({ kind: "cancel" });
+        if (action.type === "clear") return cleanup({ kind: "clear" });
+        if (action.type === "confirm") {
+          const sel = selected(state);
+          return cleanup(sel ? { kind: "selected", path: sel } : { kind: "cancel" });
+        }
         if (
           action.type === "key"
           && action.key.type === "backspace"
           && state.query === ""
         ) {
-          return cleanup(null);
+          return cleanup({ kind: "cancel" });
         }
         state = applyKey(state, action.key);
       }

@@ -36,8 +36,8 @@ describe("parseInput", () => {
     expect(parseInput("\b")).toEqual([{ type: "key", key: { type: "backspace" } }]);
   });
 
-  test("Ctrl+U (macOS の Cmd+Backspace 相当) は clear", () => {
-    expect(parseInput("\x15")).toEqual([{ type: "key", key: { type: "clear" } }]);
+  test("Ctrl+U (Cmd+Backspace) は終了種別 clear", () => {
+    expect(parseInput("\x15")).toEqual([{ type: "clear" }]);
   });
 
   test("Ctrl+W は delete-word", () => {
