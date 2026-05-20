@@ -22,4 +22,18 @@ describe("renderFishSnippet", () => {
     expect(snippet).toContain("cmux-open-file complete");
     expect(snippet).toContain("commandline -ct");
   });
+
+  test("英数字・パス区切り文字を bind してインクリメンタル再補完を実現", () => {
+    expect(snippet).toContain("__cmux_open_file_self_insert");
+    expect(snippet).toContain("string match -q '@ *'");
+    // 代表的な文字が個別に bind されていること
+    expect(snippet).toContain("bind 'a' '__cmux_open_file_self_insert 'a''");
+    expect(snippet).toContain("bind 'g' '__cmux_open_file_self_insert 'g''");
+    expect(snippet).toContain("bind '/' '__cmux_open_file_self_insert '/''");
+  });
+
+  test("Backspace も '@ ' モード中は再補完を発火する", () => {
+    expect(snippet).toContain("__cmux_open_file_backspace");
+    expect(snippet).toContain("commandline -f backward-delete-char");
+  });
 });
