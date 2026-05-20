@@ -26,7 +26,7 @@ export function parseInput(data: string): InputAction[] {
         i += 3;
         if (seq === "A") actions.push({ type: "key", key: { type: "up" } });
         else if (seq === "B") actions.push({ type: "key", key: { type: "down" } });
-        else if (seq === "C") actions.push({ type: "confirm" });
+        else if (seq === "C") actions.push({ type: "key", key: { type: "expand" } });
         continue;
       }
       actions.push({ type: "cancel" });
@@ -46,9 +46,16 @@ export function parseInput(data: string): InputAction[] {
       continue;
     }
 
-    // Enter / Tab → confirm
-    if (ch === "\r" || ch === "\n" || ch === "\t") {
+    // Enter → confirm
+    if (ch === "\r" || ch === "\n") {
       actions.push({ type: "confirm" });
+      i++;
+      continue;
+    }
+
+    // Tab → expand to next directory segment of focused candidate
+    if (ch === "\t") {
+      actions.push({ type: "key", key: { type: "expand" } });
       i++;
       continue;
     }

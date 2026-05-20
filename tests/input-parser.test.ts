@@ -6,10 +6,14 @@ describe("parseInput", () => {
     expect(parseInput("a")).toEqual([{ type: "key", key: { type: "char", value: "a" } }]);
   });
 
-  test("Tab / Enter (\\r) / Right arrow は confirm", () => {
-    expect(parseInput("\t")).toEqual([{ type: "confirm" }]);
+  test("Enter (\\r) は confirm", () => {
     expect(parseInput("\r")).toEqual([{ type: "confirm" }]);
-    expect(parseInput("\x1b[C")).toEqual([{ type: "confirm" }]);
+    expect(parseInput("\n")).toEqual([{ type: "confirm" }]);
+  });
+
+  test("Tab / Right arrow は expand", () => {
+    expect(parseInput("\t")).toEqual([{ type: "key", key: { type: "expand" } }]);
+    expect(parseInput("\x1b[C")).toEqual([{ type: "key", key: { type: "expand" } }]);
   });
 
   test("Up/Down arrow", () => {
@@ -33,10 +37,11 @@ describe("parseInput", () => {
   });
 
   test("複数 byte をまとめて処理", () => {
-    expect(parseInput("ab\x1b[B\r")).toEqual([
+    expect(parseInput("ab\x1b[B\t\r")).toEqual([
       { type: "key", key: { type: "char", value: "a" } },
       { type: "key", key: { type: "char", value: "b" } },
       { type: "key", key: { type: "down" } },
+      { type: "key", key: { type: "expand" } },
       { type: "confirm" },
     ]);
   });
