@@ -10,7 +10,8 @@ describe("renderFishSnippet", () => {
 
   test("commandline が空の時に '@ ' を挿入して補完を発火", () => {
     expect(snippet).toContain("commandline -i '@ '");
-    expect(snippet).toContain("commandline -f complete");
+    // complete-and-search を使う (単一候補でも自動確定されない)
+    expect(snippet).toContain("commandline -f complete-and-search");
   });
 
   test("@ 関数で cmux-open-file open を呼ぶ", () => {

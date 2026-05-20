@@ -15,7 +15,8 @@ bind @ '__cmux_open_file_at_trigger'
 function __cmux_open_file_at_trigger
     if test -z (commandline)
         commandline -i '@ '
-        commandline -f complete
+        # complete-and-search を使うと候補が1つに絞れても自動確定されない (pager が必ず開く)
+        commandline -f complete-and-search
     else
         commandline -i '@'
     end
@@ -34,7 +35,7 @@ complete -c @ -f -k -a '(cmux-open-file complete -- (commandline -ct))'
 function __cmux_open_file_self_insert
     commandline -i $argv[1]
     if string match -q '@ *' -- (commandline)
-        commandline -f complete
+        commandline -f complete-and-search
     end
 end
 
@@ -42,7 +43,7 @@ end
 function __cmux_open_file_backspace
     commandline -f backward-delete-char
     if string match -q '@ *' -- (commandline)
-        commandline -f complete
+        commandline -f complete-and-search
     end
 end
 bind \\b '__cmux_open_file_backspace'
