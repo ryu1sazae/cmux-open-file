@@ -73,7 +73,7 @@ function render(ui: NodeJS.WritableStream, state: PickState): void {
   out += inline;              // "@ <query>" をプロンプトの隣に描く
   // 候補を1行下から描画
   out += "\r\n";
-  out += `${DIM}↑↓ select · Tab/→ expand · Enter confirm · Esc cancel${RESET}\r\n`;
+  out += `${DIM}↑↓ select · Tab/→ expand · Enter confirm · Ctrl+U clear · Esc cancel${RESET}\r\n`;
   if (state.matches.length === 0) {
     out += `  ${DIM}No matches${RESET}\r\n`;
   } else {

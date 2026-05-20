@@ -19,8 +19,28 @@ export function parseInput(data: string): InputAction[] {
       continue;
     }
 
-    // CSI escape sequences
+    // Ctrl+U → 行全消去 (macOS の Cmd+Backspace はだいたいこれに変換される)
+    if (ch === "\x15") {
+      actions.push({ type: "key", key: { type: "clear" } });
+      i++;
+      continue;
+    }
+
+    // Ctrl+W → 末尾単語削除
+    if (ch === "\x17") {
+      actions.push({ type: "key", key: { type: "delete-word" } });
+      i++;
+      continue;
+    }
+
+    // CSI escape sequences (および Alt+Backspace = ESC + DEL)
     if (ch === "\x1b") {
+      // Alt+Backspace: ESC + DEL/BS → 単語削除
+      if (data[i + 1] === "\x7f" || data[i + 1] === "\b") {
+        actions.push({ type: "key", key: { type: "delete-word" } });
+        i += 2;
+        continue;
+      }
       if (data[i + 1] === "[" && i + 2 < data.length) {
         const seq = data[i + 2];
         i += 3;

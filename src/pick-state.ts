@@ -3,6 +3,8 @@ import { match, type MatchResult } from "./matcher";
 export type Key =
   | { type: "char"; value: string }
   | { type: "backspace" }
+  | { type: "delete-word" }
+  | { type: "clear" }
   | { type: "up" }
   | { type: "down" }
   | { type: "expand" };
@@ -62,6 +64,16 @@ export function applyKey(state: PickState, key: Key): PickState {
       const matches = match(query, state.targets, state.limit);
       return { ...state, query, matches, cursor: 0 };
     }
+    case "delete-word": {
+      // 末尾の "word" (英数字+一部記号) または末尾の `/` を含む直前のセグメントを削除
+      const query = deleteLastWord(state.query);
+      const matches = match(query, state.targets, state.limit);
+      return { ...state, query, matches, cursor: 0 };
+    }
+    case "clear": {
+      const matches = match("", state.targets, state.limit);
+      return { ...state, query: "", matches, cursor: 0 };
+    }
     case "up":
       return { ...state, cursor: Math.max(0, state.cursor - 1) };
     case "down": {
@@ -81,4 +93,20 @@ export function applyKey(state: PickState, key: Key): PickState {
 
 export function selected(state: PickState): string | null {
   return state.matches[state.cursor]?.path ?? null;
+}
+
+/**
+ * "末尾の単語を1つ削除"。例:
+ *   "docs/specs/2026.md" → "docs/specs/"
+ *   "docs/specs/"        → "docs/"
+ *   "docs"               → ""
+ */
+export function deleteLastWord(s: string): string {
+  if (s === "") return "";
+  // 末尾の `/` は1つ削る (segment 終端マーカーを剥がす)
+  let end = s.length;
+  if (s[end - 1] === "/") end -= 1;
+  // それより前の `/` を探して、その直後までを残す
+  const lastSlash = s.lastIndexOf("/", end - 1);
+  return s.substring(0, lastSlash + 1);
 }

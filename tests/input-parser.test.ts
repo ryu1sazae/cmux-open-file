@@ -36,6 +36,19 @@ describe("parseInput", () => {
     expect(parseInput("\b")).toEqual([{ type: "key", key: { type: "backspace" } }]);
   });
 
+  test("Ctrl+U (macOS の Cmd+Backspace 相当) は clear", () => {
+    expect(parseInput("\x15")).toEqual([{ type: "key", key: { type: "clear" } }]);
+  });
+
+  test("Ctrl+W は delete-word", () => {
+    expect(parseInput("\x17")).toEqual([{ type: "key", key: { type: "delete-word" } }]);
+  });
+
+  test("Alt+Backspace (ESC+DEL) は delete-word", () => {
+    expect(parseInput("\x1b\x7f")).toEqual([{ type: "key", key: { type: "delete-word" } }]);
+    expect(parseInput("\x1b\b")).toEqual([{ type: "key", key: { type: "delete-word" } }]);
+  });
+
   test("複数 byte をまとめて処理", () => {
     expect(parseInput("ab\x1b[B\t\r")).toEqual([
       { type: "key", key: { type: "char", value: "a" } },

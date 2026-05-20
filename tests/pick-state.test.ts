@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { createState, applyKey, selected, expandQuery } from "../src/pick-state";
+import { createState, applyKey, selected, expandQuery, deleteLastWord } from "../src/pick-state";
 
 const targets = ["foo.md", "bar.ts", "baz.html"];
 
@@ -92,6 +92,45 @@ describe("expandQuery", () => {
 
   test("変化なしのケースは同じ文字列を返す", () => {
     expect(expandQuery("foo.md", "foo.md")).toBe("foo.md");
+  });
+});
+
+describe("deleteLastWord", () => {
+  test("末尾の単語を1つ削る", () => {
+    expect(deleteLastWord("docs/specs/2026.md")).toBe("docs/specs/");
+  });
+
+  test("末尾が / の場合はその segment を剥がす", () => {
+    expect(deleteLastWord("docs/specs/")).toBe("docs/");
+  });
+
+  test("単一セグメントは空に", () => {
+    expect(deleteLastWord("docs")).toBe("");
+  });
+
+  test("空文字列はそのまま", () => {
+    expect(deleteLastWord("")).toBe("");
+  });
+});
+
+describe("clear / delete-word キー (state)", () => {
+  const t = ["docs/specs/2026.md", "src/cli.ts"];
+
+  test("clear で query が空になる", () => {
+    let s = createState(t, 10, "docs/spec");
+    s = applyKey(s, { type: "clear" });
+    expect(s.query).toBe("");
+    expect(s.matches.length).toBe(t.length);
+  });
+
+  test("delete-word で末尾セグメントが消える", () => {
+    let s = createState(t, 10, "docs/specs/2026.md");
+    s = applyKey(s, { type: "delete-word" });
+    expect(s.query).toBe("docs/specs/");
+    s = applyKey(s, { type: "delete-word" });
+    expect(s.query).toBe("docs/");
+    s = applyKey(s, { type: "delete-word" });
+    expect(s.query).toBe("");
   });
 });
 
