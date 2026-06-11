@@ -20,6 +20,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Forbid Bun-only API in src/ (ships as Node binary)
+        run: |
+          if grep -rn '\bBun\.' src/; then
+            echo "Found Bun-only API in src/. Use node: built-ins instead." >&2
+            exit 1
+          fi
+
       - name: Run tests
         run: bun test
 

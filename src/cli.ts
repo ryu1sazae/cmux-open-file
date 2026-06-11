@@ -8,10 +8,10 @@ const USAGE = `cmux-open-file <pick|open|init|install>
 
 Normally invoked indirectly via the '@' key in fish shell.
 
-  pick               Launch the fuzzy file picker (prints selected path to stdout)
-  open <path>        Open <path> in cmux based on its extension
-  init fish          Print fish integration snippet
-  install            Install fish integration to ~/.config/fish/conf.d/
+  pick [query]   Launch inline fuzzy picker. Prints selected path to stdout.
+  open <path>    Open <path> in cmux based on its extension.
+  init fish      Print fish integration snippet.
+  install        Install fish integration to ~/.config/fish/conf.d/.
 `;
 
 async function main(): Promise<void> {
@@ -19,12 +19,17 @@ async function main(): Promise<void> {
 
   switch (sub) {
     case "pick": {
-      const selected = await runPicker();
-      if (selected) {
-        process.stdout.write(selected);
-        process.exit(0);
+      const initialQuery = args.join(" ");
+      const result = await runPicker(initialQuery);
+      switch (result.kind) {
+        case "selected":
+          process.stdout.write(result.path);
+          process.exit(0);
+        case "clear":
+          process.exit(2);
+        case "cancel":
+          process.exit(1);
       }
-      process.exit(1);
       return;
     }
     case "open": {

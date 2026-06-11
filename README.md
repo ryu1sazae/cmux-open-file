@@ -20,20 +20,33 @@ npm install -g cmux-open-file
 
 ## Usage
 
-fish のコマンドラインが空のときに `@` を押すとピッカーが起動する。
+fish のコマンドラインが空のときに `@` を押すと、プロンプトのすぐ下に fuzzy ピッカーがインラインで起動する。既に `@ xxx` を編集中の状態で `@` を押すと、`xxx` を初期クエリにしてピッカーが再起動する。
 
 | キー | 動作 |
 |---|---|
-| 文字入力 | インクリメンタル fuzzy 検索 |
-| ↑ / ↓ (or Ctrl+P / Ctrl+N) | 候補移動 |
-| Tab / → / Enter | 確定 → fish に `@<path>` が挿入される |
+| 文字入力 | インクリメンタル fuzzy 検索（毎キー即時更新） |
+| ↑ / ↓ / Ctrl+P / Ctrl+N | 候補移動 |
+| Tab / → | フォーカス候補の次のディレクトリ階層まで query を補完（例: `docs/specs/2026.md` フォーカス時に `docs/` → `docs/specs/` → フルパスと連打で掘れる） |
+| Enter | 確定して fish に `@ <path>` を挿入 |
+| Backspace | query を1文字削除。query が空のときは picker を抜けて `@` も削除 |
+| Ctrl+U (= Cmd+Backspace) | ピッカーを抜けて commandline を全消去（`@` も消える） |
+| Ctrl+W / Option+Backspace | query の末尾セグメントを削除 |
 | Esc / Ctrl+C | キャンセル |
 
-fish のコマンドラインが `@<path>` の状態で Enter を押すと、cmux の同じワークスペース内に右方向へペインが展開される。
+確定すると fish が `@ <path>` を実行し、`@` を実行したペインにサーフェスが追加される（新しいペインは作らない）。タブ順は「プレビュー左 / nvim 右」:
 
-- `.md` → nvim + markdown プレビュー
-- `.html` → nvim + ブラウザ
+- `.md` → markdown プレビュー + nvim
+- `.html` → ブラウザ + nvim
 - その他 → nvim のみ
+
+検索対象から以下は除外される（隠しファイルは含む）:
+
+- VCS / 依存: `.git`, `node_modules`, `vendor`
+- ビルド成果物: `dist`, `build`, `out`, `target`, `coverage`
+- Python: `__pycache__`, `.pytest_cache`, `.venv`, `venv`, `env`
+- JS/TS フレームワーク・キャッシュ: `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.expo`, `.cache`, `.parcel-cache`, `.vite`, `.turbo`
+- JVM: `.gradle`
+- macOS メタデータ: `.DS_Store`
 
 ## Uninstall
 
